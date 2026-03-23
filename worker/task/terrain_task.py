@@ -98,7 +98,8 @@ def convert_dem(self, payload) -> dict:
 
         terrain_dir_path = to_relative_path(paths.terrain_dir, paths.assets_root)
         terrain_zip_path = to_relative_path(paths.terrain_zip, paths.assets_root)
-        terrain_uri = to_asset_url(terrain_dir_path)
+        terrain_layer_path = f"{terrain_dir_path.rstrip('/')}/layer.json"
+        terrain_uri = to_asset_url(terrain_layer_path)
         zip_uri = to_asset_url(terrain_zip_path)
 
         terrain_result_upsert(

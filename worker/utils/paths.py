@@ -16,7 +16,7 @@ class TerrainPathSet:
 def build_terrain_paths(job_id: str) -> TerrainPathSet:
     assets_root = settings.assets_dir
     terrain_dir = os.path.join(assets_root, "dem", "terrain", job_id)
-    terrain_zip = os.path.join(assets_root, "dem", "terrain", f"{job_id}.zip")
+    terrain_zip = os.path.join(assets_root, "dem", "terrain", "zip", f"{job_id}.zip")
     return TerrainPathSet(
         assets_root=assets_root,
         terrain_dir=terrain_dir,
