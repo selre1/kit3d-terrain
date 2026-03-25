@@ -19,7 +19,7 @@ from worker.terrain.ctb.models import CtbError, CtbResult
 from worker.terrain.ctb.runner import run_ctb
 from worker.utils.archive import zip_directory
 from worker.utils.logs import write_task_log
-from worker.utils.paths import build_terrain_paths, to_asset_url, to_relative_path
+from worker.utils.paths import build_terrain_paths, to_asset_url, to_relative_path, to_terrain_url
 from worker.utils.time import now_kst_text
 
 logger = get_logger("kit3d-terrain")
@@ -98,8 +98,7 @@ def convert_dem(self, payload) -> dict:
 
         terrain_dir_path = to_relative_path(paths.terrain_dir, paths.assets_root)
         terrain_zip_path = to_relative_path(paths.terrain_zip, paths.assets_root)
-        terrain_layer_path = f"{terrain_dir_path.rstrip('/')}/layer.json"
-        terrain_uri = to_asset_url(terrain_layer_path)
+        terrain_uri = to_terrain_url(req.job_id)
         zip_uri = to_asset_url(terrain_zip_path)
 
         terrain_result_upsert(

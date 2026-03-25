@@ -30,3 +30,6 @@ def to_relative_path(path: str, base_dir: str) -> str:
 
 def to_asset_url(relative_path: str) -> str:
     return f"/assets/{relative_path.lstrip('/')}"
+
+def to_terrain_url(job_id: str) -> str:
+    return f"/terrain/{job_id}/layer.json"
