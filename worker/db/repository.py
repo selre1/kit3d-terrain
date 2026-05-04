@@ -1,27 +1,30 @@
 from __future__ import annotations
 
-from datetime import datetime
-
 from worker.db.connection import get_connection
 
 
-def terrain_task_running(job_id: str, dem_id: str, started_at: datetime, task_id: str | None = None) -> None:
+def _ensure_updated(rowcount: int, job_id: str, action: str) -> None:
+    if rowcount == 0:
+        raise RuntimeError(f"terrain_job not found for {action}: {job_id}")
+
+
+def terrain_task_running(job_id: str, dem_id: str, task_id: str | None = None) -> None:
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
                 """
-                INSERT INTO terrain_job (job_id, dem_id, status, task_id, err, started_at, ended_at)
-                VALUES (%s, %s, 'RUNNING', %s, NULL, %s, NULL)
-                ON CONFLICT (job_id) DO UPDATE
-                SET dem_id = EXCLUDED.dem_id,
-                    status = 'RUNNING',
-                    task_id = EXCLUDED.task_id,
+                UPDATE terrain_job
+                SET status = 'RUNNING',
+                    task_id = %s,
                     err = NULL,
-                    started_at = EXCLUDED.started_at,
+                    started_at = NOW(),
                     ended_at = NULL
+                WHERE job_id = %s
+                  AND dem_id = %s
                 """,
-                (job_id, dem_id, task_id, started_at),
+                (task_id, job_id, dem_id),
             )
+            _ensure_updated(cur.rowcount, job_id, "RUNNING")
 
 
 def terrain_task_zipping(job_id: str) -> None:
@@ -35,9 +38,10 @@ def terrain_task_zipping(job_id: str) -> None:
                 """,
                 (job_id,),
             )
+            _ensure_updated(cur.rowcount, job_id, "ZIPPING")
 
 
-def terrain_task_done(job_id: str, ended_at: datetime) -> None:
+def terrain_task_done(job_id: str) -> None:
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -45,14 +49,15 @@ def terrain_task_done(job_id: str, ended_at: datetime) -> None:
                 UPDATE terrain_job
                 SET status = 'DONE',
                     err = NULL,
-                    ended_at = %s
+                    ended_at = NOW()
                 WHERE job_id = %s
                 """,
-                (ended_at, job_id),
+                (job_id,),
             )
+            _ensure_updated(cur.rowcount, job_id, "DONE")
 
 
-def terrain_task_failed(job_id: str, err: str, ended_at: datetime) -> None:
+def terrain_task_failed(job_id: str, err: str) -> None:
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -60,11 +65,12 @@ def terrain_task_failed(job_id: str, err: str, ended_at: datetime) -> None:
                 UPDATE terrain_job
                 SET status = 'FAILED',
                     err = %s,
-                    ended_at = %s
+                    ended_at = NOW()
                 WHERE job_id = %s
                 """,
-                (err[:4000], ended_at, job_id),
+                (err[:4000], job_id),
             )
+            _ensure_updated(cur.rowcount, job_id, "FAILED")
 
 
 def terrain_result_upsert(

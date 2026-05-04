@@ -16,7 +16,7 @@ class TerrainPathSet:
 def build_terrain_paths(job_id: str) -> TerrainPathSet:
     assets_root = settings.assets_dir
     terrain_dir = os.path.join(assets_root, "dem", "terrain", job_id)
-    terrain_zip = os.path.join(assets_root, "dem", "terrain", f"{job_id}.zip")
+    terrain_zip = os.path.join(assets_root, "dem", "zip", f"{job_id}.zip")
     return TerrainPathSet(
         assets_root=assets_root,
         terrain_dir=terrain_dir,
@@ -30,3 +30,6 @@ def to_relative_path(path: str, base_dir: str) -> str:
 
 def to_asset_url(relative_path: str) -> str:
     return f"/assets/{relative_path.lstrip('/')}"
+
+def to_terrain_url(job_id: str) -> str:
+    return f"/terrain/{job_id}/"

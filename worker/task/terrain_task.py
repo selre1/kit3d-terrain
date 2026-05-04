@@ -19,8 +19,8 @@ from worker.terrain.ctb.models import CtbError, CtbResult
 from worker.terrain.ctb.runner import run_ctb
 from worker.utils.archive import zip_directory
 from worker.utils.logs import write_task_log
-from worker.utils.paths import build_terrain_paths, to_asset_url, to_relative_path
-from worker.utils.time import now_kst, now_kst_text
+from worker.utils.paths import build_terrain_paths, to_asset_url, to_relative_path, to_terrain_url
+from worker.utils.time import now_kst_text
 
 logger = get_logger("kit3d-terrain")
 
@@ -65,7 +65,7 @@ def _build_log_text(result: CtbResult) -> str:
 
 def _mark_failed(job_id: str, err: str) -> None:
     try:
-        terrain_task_failed(job_id, err, now_kst())
+        terrain_task_failed(job_id, err)
     except Exception:
         logger.exception("Failed to update terrain_job status FAILED job_id=%s", job_id)
 
@@ -88,7 +88,7 @@ def convert_dem(self, payload) -> dict:
     os.makedirs(paths.terrain_dir, exist_ok=True)
 
     try:
-        terrain_task_running(req.job_id, req.dem_id, now_kst(), celery_task_id)
+        terrain_task_running(req.job_id, req.dem_id, celery_task_id)
 
         ctb_result = run_ctb(req.file_path, paths.terrain_dir)
         log_path = write_task_log(req.job_id, _build_log_text(ctb_result))
@@ -98,7 +98,7 @@ def convert_dem(self, payload) -> dict:
 
         terrain_dir_path = to_relative_path(paths.terrain_dir, paths.assets_root)
         terrain_zip_path = to_relative_path(paths.terrain_zip, paths.assets_root)
-        terrain_uri = to_asset_url(terrain_dir_path)
+        terrain_uri = to_terrain_url(req.job_id)
         zip_uri = to_asset_url(terrain_zip_path)
 
         terrain_result_upsert(
@@ -108,7 +108,7 @@ def convert_dem(self, payload) -> dict:
             terrain_uri,
             zip_uri,
         )
-        terrain_task_done(req.job_id, now_kst())
+        terrain_task_done(req.job_id)
 
         return {
             "job_id": req.job_id,
@@ -119,7 +119,6 @@ def convert_dem(self, payload) -> dict:
             "terrain_uri": terrain_uri,
             "zip_uri": zip_uri,
             "log_path": log_path,
-            "finished_at": now_kst_text(),
         }
     except CtbError as exc:
         logger.exception("Terrain conversion failed job_id=%s", req.job_id)
@@ -131,7 +130,6 @@ def convert_dem(self, payload) -> dict:
             "status": "FAILED",
             "error": str(exc),
             "log_path": log_path,
-            "finished_at": now_kst_text(),
         }
     except Exception as exc:
         logger.exception("Unexpected terrain failure job_id=%s", req.job_id)
@@ -144,5 +142,4 @@ def convert_dem(self, payload) -> dict:
             "status": "FAILED",
             "error": str(exc),
             "log_path": log_path,
-            "finished_at": now_kst_text(),
         }
